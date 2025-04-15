@@ -35,6 +35,9 @@ RUN usermod -u 1000 www-data && groupmod -g 1000 www-data
 # Apacheモジュールを有効化
 RUN a2enmod rewrite headers
 
+# AllowOverrideをAllに設定
+RUN sed -i /<Directory \/var\/www\/html>/,/<\/Directory>/ s/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf
+
 # DocumentRootを変更し、環境変数を設定
 RUN DEFAULT_SITE_FILE=/etc/apache2/sites-enabled/000-default.conf && \
     TMP=$(mktemp) && \

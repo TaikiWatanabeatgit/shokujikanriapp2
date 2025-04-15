@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title><?php echo Html::chars($title); ?></title>
+    <title><?php echo Security::htmlentities($title); ?></title>
     <?php echo Asset::css('style.css'); // アセットのパスは適宜調整してください ?>
     <style>
         /* 簡単なテーブルスタイル */
@@ -27,17 +27,17 @@
     </style>
 </head>
 <body>
-    <h1><?php echo Html::chars($title); ?></h1>
+    <h1><?php echo Security::htmlentities($title); ?></h1>
 
     <?php // フラッシュメッセージ表示
         if (Session::get_flash('success')): ?>
         <div class="alert alert-success">
-            <?php echo nl2br(Html::chars(Session::get_flash('success'))); // XSS対策と改行反映 ?>
+            <?php echo nl2br(Security::htmlentities(Session::get_flash('success'))); ?>
         </div>
     <?php endif; ?>
     <?php if (Session::get_flash('error')): ?>
         <div class="alert alert-danger">
-            <?php echo nl2br(Html::chars(Session::get_flash('error'))); // XSS対策と改行反映 ?>
+            <?php echo nl2br(Security::htmlentities(Session::get_flash('error'))); ?>
         </div>
     <?php endif; ?>
 
@@ -62,17 +62,16 @@
             <tbody>
                 <?php foreach ($mealRecords as $record): ?>
                     <tr>
-                        <td><?php echo Html::chars($record->date); ?></td>
-                        <td><?php echo Html::chars($record->meal_type); ?></td>
-                        <td><?php echo Html::chars($record->food_name); ?></td>
-                        <td><?php echo $record->calories !== null ? Html::chars($record->calories) . ' kcal' : '-'; ?></td>
-                        <td><?php echo nl2br(Html::chars($record->notes ?? '')); // nullの場合は空文字 ?></td>
+                        <td><?php echo Security::htmlentities($record['date']); ?></td>
+                        <td><?php echo Security::htmlentities($record['meal_type']); ?></td>
+                        <td><?php echo Security::htmlentities($record['food_name']); ?></td>
+                        <td><?php echo $record['calories'] !== null ? Security::htmlentities($record['calories']) . ' kcal' : '-'; ?></td>
+                        <td><?php echo nl2br(Security::htmlentities($record['notes'] ?? '')); ?></td>
                         <td class="actions">
-                            <?php // echo Html::anchor('meal-records/show/'. $record->id, '詳細'); // 必要なら ?>
-                            <?php echo Html::anchor('meal-records/edit/'. $record->id, '編集'); ?>
-                            <?php // 削除はPOST推奨。簡易的にJSで確認ダイアログを出す
-                                echo Form::open(array('action' => 'meal-records/delete/'.$record->id, 'method' => 'post', 'style' => 'display:inline;', 'onsubmit' => "return confirm('本当に削除しますか？');"));
-                                echo Form::button('delete', '削除', array('type' => 'submit', 'class' => 'btn btn-danger btn-xs')); // CSSで調整
+                            <?php echo Html::anchor('meal-records/edit/'. $record['id'], '編集'); ?>
+                            <?php
+                                echo Form::open(array('action' => 'meal-records/delete/'.$record['id'], 'method' => 'post', 'style' => 'display:inline;', 'onsubmit' => "return confirm('本当に削除しますか？');"));
+                                echo Form::button('delete', '削除', array('type' => 'submit', 'class' => 'btn btn-danger btn-xs'));
                                 echo Form::close();
                             ?>
                         </td>
@@ -82,7 +81,7 @@
         </table>
 
         <div class="pagination">
-            <?php echo $pagination; // Pagination::render() を呼び出す ?>
+            <?php echo $pagination; ?>
         </div>
 
     <?php else: ?>
@@ -90,4 +89,4 @@
     <?php endif; ?>
 
 </body>
-</html> 
+</html>
