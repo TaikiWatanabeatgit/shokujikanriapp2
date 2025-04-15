@@ -337,3 +337,17 @@ INFO - 2025-04-15 19:03:06 --> Fuel\Core\Request::__construct - Creating a new m
 INFO - 2025-04-15 19:03:06 --> Fuel\Core\Request::execute - Called
 INFO - 2025-04-15 19:03:06 --> Fuel\Core\Request::execute - Setting main Request
 ERROR - 2025-04-15 19:03:06 --> Error - Could not find asset: style.css in /var/www/html/my_fuel_project/fuel/core/classes/asset/instance.php on line 413
+WARNING - 2025-04-15 19:10:09 --> Fuel\Core\Fuel::init - The configured locale en_US is not installed on your system.
+WARNING - 2025-04-15 19:10:09 --> Fuel\Core\Fuel::init - The configured locale en_US is not installed on your system.
+WARNING - 2025-04-15 19:10:13 --> Fuel\Core\Fuel::init - The configured locale en_US is not installed on your system.
+WARNING - 2025-04-15 19:10:13 --> Fuel\Core\Fuel::init - The configured locale en_US is not installed on your system.
+WARNING - 2025-04-15 19:10:15 --> Fuel\Core\Fuel::init - The configured locale en_US is not installed on your system.
+WARNING - 2025-04-15 19:10:15 --> Fuel\Core\Fuel::init - The configured locale en_US is not installed on your system.
+WARNING - 2025-04-15 19:10:20 --> Fuel\Core\Fuel::init - The configured locale en_US is not installed on your system.
+WARNING - 2025-04-15 19:10:30 --> Fuel\Core\Fuel::init - The configured locale en_US is not installed on your system.
+WARNING - 2025-04-15 19:10:30 --> Fuel\Core\Fuel::init - The configured locale en_US is not installed on your system.
+WARNING - 2025-04-15 19:10:30 --> Fuel\Core\Fuel::init - The configured locale en_US is not installed on your system.
+WARNING - 2025-04-15 19:10:35 --> Fuel\Core\Fuel::init - The configured locale en_US is not installed on your system.
+WARNING - 2025-04-15 19:10:42 --> Fuel\Core\Fuel::init - The configured locale en_US is not installed on your system.
+WARNING - 2025-04-15 19:10:43 --> Fuel\Core\Fuel::init - The configured locale en_US is not installed on your system.
+WARNING - 2025-04-15 19:10:43 --> Fuel\Core\Fuel::init - The configured locale en_US is not installed on your system.
