@@ -1,0 +1,209 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\MealRecord;
+use Illuminate\Http\Request;
+
+class MealRecordController extends Controller
+{
+    /**
+     * Display a listing of the resource.
+     */
+    public function index()
+    {
+        $mealRecords = MealRecord::orderBy('date', 'desc')->paginate(10);
+        return view('meal-records.index', compact('mealRecords'));
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     */
+    public function create()
+    {
+        return view('meal-records.create');
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'date' => 'required|date',
+            'meal_type' => 'required|in:breakfast,lunch,dinner,snack',
+            'food_name' => 'required|string|max:255',
+            'calories' => 'nullable|integer|min:0',
+            'notes' => 'nullable|string',
+        ]);
+
+        MealRecord::create($validated);
+
+        return redirect()->route('meal-records.index')
+            ->with('success', '食事記録が正常に保存されました。');
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(string $id)
+    {
+        //
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(string $id)
+    {
+        $mealRecord = MealRecord::findOrFail($id);
+        return view('meal-records.edit', compact('mealRecord'));
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, string $id)
+    {
+        $mealRecord = MealRecord::findOrFail($id);
+
+        $validated = $request->validate([
+            'date' => 'required|date',
+            'meal_type' => 'required|in:breakfast,lunch,dinner,snack',
+            'food_name' => 'required|string|max:255',
+            'calories' => 'nullable|integer|min:0',
+            'notes' => 'nullable|string',
+        ]);
+
+        $mealRecord->update($validated);
+
+        return redirect()->route('meal-records.index')
+            ->with('success', '食事記録が正常に更新されました。');
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(string $id)
+    {
+        $mealRecord = MealRecord::findOrFail($id);
+        $mealRecord->delete();
+
+        return redirect()->route('meal-records.index')
+            ->with('success', '食事記録が正常に削除されました。');
+    }
+
+    /**
+     * Display the summary of meal records.
+     */
+    public function summary()
+    {
+        $today = now()->format('Y-m-d');
+        $currentMonth = now()->format('Y-m');
+        
+        // 今日の記録
+        $todayRecords = MealRecord::whereDate('date', $today)
+            ->orderBy('meal_type')
+            ->get();
+        
+        // 過去の記録（今日以外）
+        $pastRecords = MealRecord::whereDate('date', '<', $today)
+            ->orderBy('date', 'desc')
+            ->get();
+        
+        // 今月の合計カロリー
+        $monthlyTotalCalories = MealRecord::whereYear('date', now()->year)
+            ->whereMonth('date', now()->month)
+            ->sum('calories');
+        
+        // 過去の平均カロリー（今日以外）
+        $pastAverageCalories = $pastRecords->avg('calories') ?? 0;
+        
+        return view('meal-records.summary', compact(
+            'todayRecords',
+            'pastRecords',
+            'monthlyTotalCalories',
+            'pastAverageCalories'
+        ));
+    }
+}
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo htmlspecialchars($config['app_name']); ?> - 検索</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/search.js" defer></script>
+    <style>
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-style: italic;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <h1><?php echo htmlspecialchars($config['app_name']); ?> - 検索</h1>
+    
+    <div class="nav-links">
+        <a href="shokujiNyuryoku.php">記録入力</a>
+        <a href="shokujiSummary.php">記録サマリー</a>
+        <a href="setting.php">ユーザー情報</a>
+    </div>
+
+    <div class="search-forms">
+        <form action="api/search.php" method="post" class="search-form" id="dateSearchForm">
+            <div class="form-group">
+                <label for="search_date">検索日：</label>
+                <input type="date" id="search_date" name="search_date" value="<?php echo htmlspecialchars($search_date); ?>" required>
+            </div>
+            <button type="submit">検索</button>
+        </form>
+        
+        <form action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>" method="post" class="search-form">
+            <div class="form-group">
+                <label for="search_name">料理名：</label>
+                <input type="text" id="search_name" name="search_name" value="<?php echo htmlspecialchars($search_name); ?>" required>
+            </div>
+            <button type="submit">検索</button>
+        </form>
+    </div>
+
+    <?php if (!empty($error_message)): ?>
+        <div class="error-message">
+            <?php echo htmlspecialchars($error_message); ?>
+        </div>
+    <?php endif; ?>
+
+    <?php if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['search_name'])): ?>
+        <?php if (empty($records)): ?>
+            <div class="no-results">
+                <p><?php echo htmlspecialchars($search_name) . 'を含む記録は見つかりませんでした。'; ?></p>
+            </div>
+        <?php else: ?>
+            <h2>検索結果</h2>
+            <div class="meal-list">
+                <?php foreach ($records as $record): ?>
+                    <div class="meal-item">
+                        <h3><?php echo htmlspecialchars($record['date']); ?></h3>
+                        <p>朝食：<?php echo htmlspecialchars($record['breakfast']); ?> 
+                           <span class="calories">(<?php echo $record['breakfast_calories']; ?>kcal)</span></p>
+                        <p>昼食：<?php echo htmlspecialchars($record['lunch']); ?> 
+                           <span class="calories">(<?php echo $record['lunch_calories']; ?>kcal)</span></p>
+                        <p>夕食：<?php echo htmlspecialchars($record['dinner']); ?> 
+                           <span class="calories">(<?php echo $record['dinner_calories']; ?>kcal)</span></p>
+                        <?php if (!empty($record['snack'])): ?>
+                            <p>間食：<?php echo htmlspecialchars($record['snack']); ?> 
+                               <span class="calories">(<?php echo $record['snack_calories']; ?>kcal)</span></p>
+                        <?php endif; ?>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+    <?php endif; ?>
+</body>
+</html> 
+
