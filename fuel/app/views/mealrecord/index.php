@@ -28,6 +28,7 @@
     </style>
 </head>
 <body>
+    <?php echo Form::csrf(); // CSRF対策トークン ?>
     <h1><?php echo Security::htmlentities($title); ?></h1>
 
     <?php // フラッシュメッセージ表示
@@ -63,6 +64,7 @@
             <tbody>
                 <?php foreach ($mealRecords as $record): ?>
                     <tr>
+                         <?php echo Form::csrf(); // CSRF対策トークン ?>
                         <td><?php echo Security::htmlentities($record['date']); ?></td>
                         <td><?php echo Security::htmlentities($record['meal_type']); ?></td>
                         <td><?php echo Security::htmlentities($record['food_name']); ?></td>
@@ -71,8 +73,9 @@
                         <td class="actions">
                             <?php echo Html::anchor('mealrecord/edit/'. $record['id'], '編集'); ?>
                             <?php
-                                echo Form::open(array('action' => 'mealrecord/delete/'.$record['id'], 'method' => 'post', 'style' => 'display:inline;', 'onsubmit' => "return confirm('本当に削除しますか？');"));
-                                echo Form::button('delete', '削除', array('type' => 'submit', 'class' => 'btn btn-danger btn-xs'));
+                                echo Form::open(array('action' => 'mealrecord/destroy/'.$record['id'], 'method' => 'post', 'style' => 'display:inline;', 'onsubmit' => "return confirm('本当に削除しますか？');"));
+                                echo Form::hidden(Config::get('security.csrf_token_key', 'fuel_csrf_token'), Security::fetch_token());
+                                echo Form::button('destroy', '削除', array('type' => 'submit', 'class' => 'btn btn-danger btn-xs'));
                                 echo Form::close();
                             ?>
                         </td>
@@ -82,7 +85,43 @@
         </table>
 
         <div class="pagination">
-            <?php echo $pagination; ?>
+            <?php
+            // Pagination オブジェクトから必要な情報を取得
+            $total_pages = $pagination->config['total_pages'] ?? 1;
+            $current_page = $pagination->config['current_page'] ?? 1;
+            $base_url = $pagination->config['pagination_url'] ?? Uri::create('mealrecord');
+            $uri_segment = $pagination->config['uri_segment'] ?? 'page';
+            ?>
+
+            <?php if ($total_pages > 1): // ページが複数ある場合のみ表示 ?>
+                <ul class="pagination">
+                    <?php // 「前へ」リンク ?>
+                    <?php if ($current_page == 1): ?>
+                        <li class="disabled"><span>&laquo;</span></li>
+                    <?php else: ?>
+                        <?php $prev_url = Uri::create($base_url . '/' . $uri_segment . '/' . ($current_page - 1)); ?>
+                        <li><a href="<?php echo $prev_url; ?>" rel="prev">&laquo;</a></li>
+                    <?php endif; ?>
+
+                    <?php // ページ番号リンク ?>
+                    <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+                        <?php if ($i == $current_page): ?>
+                            <li class="active"><span><?php echo $i; ?> <span class="sr-only">(current)</span></span></li>
+                        <?php else: ?>
+                            <?php $page_url = Uri::create($base_url . '/' . $uri_segment . '/' . $i); ?>
+                            <li><a href="<?php echo $page_url; ?>"><?php echo $i; ?></a></li>
+                        <?php endif; ?>
+                    <?php endfor; ?>
+
+                    <?php // 「次へ」リンク ?>
+                    <?php if ($current_page == $total_pages): ?>
+                        <li class="disabled"><span>&raquo;</span></li>
+                    <?php else: ?>
+                        <?php $next_url = Uri::create($base_url . '/' . $uri_segment . '/' . ($current_page + 1)); ?>
+                        <li><a href="<?php echo $next_url; ?>" rel="next">&raquo;</a></li>
+                    <?php endif; ?>
+                </ul>
+            <?php endif; ?>
         </div>
 
     <?php else: ?>

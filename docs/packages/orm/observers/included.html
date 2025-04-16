@@ -226,7 +226,7 @@ protected static $_observers = array('Orm\\Observer_Validation' => array(
 		return Response::forge($view);
 	}
 
-	public function action_delete($id = null)
+	public function action_destroy($id = null)
 	{
 		if ( ! ($article = Model_Article::find($id))
 		{

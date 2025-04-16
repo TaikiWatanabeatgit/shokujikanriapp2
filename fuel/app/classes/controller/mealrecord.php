@@ -7,31 +7,32 @@ class Controller_Mealrecord extends Controller // 必要なら Controller_Templa
      */
     public function action_index()
     {
-        // ページネーション設定
-        $config = array(
+        // 現在のページ番号を取得 (uri_segment 'page' の次、通常は3番目)
+        $current_page = Request::active()->uri->segment(3, 1); // Request クラスを使用するように修正
+
+        // pagination.php 設定ファイルを読み込み (念のため)
+        Config::load('pagination.php');
+
+        // 設定ファイルから bootstrap3 テンプレートを取得 (キーを修正)
+        $bootstrap3_template = Config::get('bootstrap3', array());
+
+        // 基本的なページネーション設定
+        $total_items_count = Model_Mealrecord::count_all(); // 値を一時変数に
+        $base_config = array(
             'pagination_url' => Uri::create('mealrecord'),
-            'total_items'    => Model_Mealrecord::count_all(),
+            'total_items'    => $total_items_count, // 一時変数を使用
             'per_page'       => 10, // 1ページあたりの表示件数
             'uri_segment'    => 'page', // URLセグメント名 (例: /mealrecord/page/2)
-            // 必要に応じて Bootstrap 用の設定を追加
-            // 'num_links' => 5,
-            // 'name' => 'bootstrap3',
-            // 'template' => array(
-            //     'wrapper_start' => '<ul class="pagination">', 
-            //     'wrapper_end' => '</ul>', 
-            //     'page_start' => '<li>', 
-            //     'page_end' => '</li>', 
-            //     'active_start' => '<li class="active"><span>', 
-            //     'active_end' => '</span></li>', 
-            //     'previous_start' => '<li>', 
-            //     'previous_end' => '</li>', 
-            //     'next_start' => '<li>', 
-            //     'next_end' => '</li>', 
-            // ),
+            'current_page'   => (int)$current_page, // 現在のページを明示的に設定
+            // 'name' => 'bootstrap3', // ここでは指定しない
         );
 
-        // ページネーションインスタンス生成
-        $pagination = Pagination::forge('mealrecord_pagination', $config);
+        // テンプレートと基本設定をマージ
+        $final_config = array_merge($bootstrap3_template, $base_config);
+        $final_config['name'] = 'bootstrap3'; // ★マージ後に name を追加
+
+        // ページネーションインスタンス生成 (マージした設定を使用)
+        $pagination = Pagination::forge('mealrecord_pagination', $final_config);
 
         // データ取得
         $mealRecords = Model_Mealrecord::get_paged(
@@ -42,7 +43,7 @@ class Controller_Mealrecord extends Controller // 必要なら Controller_Templa
         // Viewに渡すデータ
         $data = array();
         $data['title'] = '食事記録一覧';
-        $data['mealRecords'] = $mealRecords;
+        $data['mealRecords'] = $mealRecords; // 取得したデータをセット
         $data['pagination'] = $pagination;
 
         // Viewを生成して返す
@@ -90,6 +91,8 @@ class Controller_Mealrecord extends Controller // 必要なら Controller_Templa
             $data['val'] = $val;
             return Response::forge(View::forge('mealrecord/create', $data), 403);
         }
+        Log::warning(Session::get('csrf_token'));
+        
 
         // バリデーション実行
         if ($val->run()) {
@@ -271,7 +274,8 @@ class Controller_Mealrecord extends Controller // 必要なら Controller_Templa
         if (Input::method() === 'POST') {
             Log::debug('[ACTION_DESTROY] POST request received.'); // ★目印を変更
             if (!Security::check_token()) {
-                Log::warning('[ACTION_DESTROY] CSRF token mismatch.'); // ★目印を変更
+                Log::warning(Session::get('csrf_token'));
+               Log::warning('[ACTION_DESTROY] CSRF token mismatch.'); // ★目印を変更
                 Session::set_flash('error', '不正なリクエストです。もう一度お試しください。');
                 Response::redirect('mealrecord');
             }
