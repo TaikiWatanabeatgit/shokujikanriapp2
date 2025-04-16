@@ -59,47 +59,60 @@
 
     <div class="summary-section">
         <h2>過去の記録 (今日以外)</h2>
-        <?php if ($pastRecords && count($pastRecords) > 0): ?>
-            <ul class="record-list" id="past-records-list">
-                <?php foreach ($pastRecords as $record): ?>
-                    <li>
-                        <strong><?php echo Security::htmlentities($record['date']); ?></strong> - 
-                        <span class="meal-type"><?php echo Security::htmlentities($record['meal_type']); ?>:</span>
-                        <?php echo Security::htmlentities($record['food_name']); ?>
-                        <?php if ($record['calories'] !== null): ?>
-                            <span class="calories">(<?php echo Security::htmlentities($record['calories']); ?> kcal)</span>
-                        <?php endif; ?>
-                    </li>
-                <?php endforeach; ?>
-            </ul>
-            <?php if ($initialPastRecordCount >= $recordsPerPage): ?>
-                <button id="load-more-btn" data-offset="<?php echo $initialPastRecordCount; ?>" data-limit="<?php echo $recordsPerPage; ?>">もっと見る</button>
-                <p id="loading-indicator" style="display: none;">読み込み中...</p>
-            <?php endif; ?>
-        <?php else: ?>
-            <p>過去の記録はありません。</p>
-        <?php endif; ?>
+        <!-- Knockout: 過去記録リスト -->
+        <ul class="record-list" data-bind="foreach: pastRecords">
+            <li>
+                <strong data-bind="text: date"></strong> -
+                <span class="meal-type" data-bind="text: meal_type + ':'"></span>
+                <span data-bind="text: food_name"></span>
+                <!-- Knockout: カロリー表示 (nullでない場合) -->
+                <!-- ko if: calories !== null -->
+                <span class="calories" data-bind="text: '(' + calories + ' kcal)'"></span>
+                <!-- /ko -->
+            </li>
+        </ul>
+        <!-- Knockout: もっと見るボタン -->
+        <button data-bind="click: loadMore, visible: hasMore() && !isLoading(), enable: !isLoading()">もっと見る</button>
+        <!-- Knockout: 読み込み中インジケーター -->
+        <p data-bind="visible: isLoading">読み込み中...</p>
+        <!-- Knockout: 記録がない場合のメッセージ -->
+        <p data-bind="visible: !isLoading() && pastRecords().length === 0 && !hasMore()">過去の記録はありません。</p>
     </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    const loadMoreButton = document.getElementById('load-more-btn');
-    const pastRecordsList = document.getElementById('past-records-list');
-    const loadingIndicator = document.getElementById('loading-indicator');
+<!-- Knockout.js ライブラリ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.5.1/knockout-latest.js"></script>
 
-    if (loadMoreButton) {
-        loadMoreButton.addEventListener('click', async () => {
-            const offset = parseInt(loadMoreButton.dataset.offset, 10);
-            const limit = parseInt(loadMoreButton.dataset.limit, 10);
+<script type="text/javascript">
+    // サーバーサイドからの初期データを取得
+    const initialPastRecords = <?php echo json_encode($pastRecords); ?>;
+    const initialOffset = <?php echo (int)$initialPastRecordCount; ?>;
+    const recordsPerPage = <?php echo (int)$recordsPerPage; ?>;
+    const loadMoreUrl = '<?php echo Uri::create("mealrecord/load_more_past_records"); ?>';
+    const hasInitialMore = initialPastRecords.length >= recordsPerPage; // 最初の読み込みで限界まで読み込んだか
 
-            loadMoreButton.disabled = true;
-            if (loadingIndicator) loadingIndicator.style.display = 'block';
+    function PastRecordsViewModel() {
+        var self = this;
+
+        // Observable プロパティ
+        self.pastRecords = ko.observableArray(initialPastRecords); // 過去の記録リスト
+        self.isLoading = ko.observable(false); // 読み込み中フラグ
+        self.currentOffset = ko.observable(initialOffset); // 現在のオフセット
+        self.hasMore = ko.observable(hasInitialMore); // さらに読み込めるかフラグ
+
+        // 「もっと見る」アクション
+        self.loadMore = async function() {
+            if (self.isLoading() || !self.hasMore()) {
+                return; // 読み込み中、またはこれ以上ない場合は何もしない
+            }
+
+            self.isLoading(true);
 
             try {
-                const response = await fetch(`<?php echo Uri::create('mealrecord/load_more_past_records'); ?>?offset=${offset}&limit=${limit}`, {
+                const url = `${loadMoreUrl}?offset=${self.currentOffset()}&limit=${recordsPerPage}`;
+                const response = await fetch(url, {
                     method: 'GET',
                     headers: {
-                        'Accept': 'application/json',
+                        'Accept': 'application/json'
                     }
                 });
 
@@ -110,55 +123,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 const newRecords = await response.json();
 
                 if (newRecords && newRecords.length > 0) {
-                    newRecords.forEach(record => {
-                        const li = document.createElement('li');
-
-                        const strong = document.createElement('strong');
-                        strong.textContent = record.date;
-
-                        const mealTypeSpan = document.createElement('span');
-                        mealTypeSpan.className = 'meal-type';
-                        mealTypeSpan.textContent = record.meal_type + ':';
-
-                        li.appendChild(strong);
-                        li.appendChild(document.createTextNode(' - '));
-                        li.appendChild(mealTypeSpan);
-                        li.appendChild(document.createTextNode(' '));
-                        li.appendChild(document.createTextNode(record.food_name));
-
-                        if (record.calories !== null) {
-                            const caloriesSpan = document.createElement('span');
-                            caloriesSpan.className = 'calories';
-                            caloriesSpan.textContent = `(${record.calories} kcal)`;
-                            li.appendChild(document.createTextNode(' '));
-                            li.appendChild(caloriesSpan);
-                        }
-
-                        pastRecordsList.appendChild(li);
-                    });
-
-                    loadMoreButton.dataset.offset = offset + newRecords.length;
-
-                    if (newRecords.length < limit) {
-                        loadMoreButton.style.display = 'none';
-                    } else {
-                         loadMoreButton.disabled = false;
+                    // 新しい記録を既存のリストに追加
+                    newRecords.forEach(record => self.pastRecords.push(record));
+                    // オフセットを更新
+                    self.currentOffset(self.currentOffset() + newRecords.length);
+                    // 取得した件数がリミット未満なら、もうないと判断
+                    if (newRecords.length < recordsPerPage) {
+                        self.hasMore(false);
                     }
-
                 } else {
-                    loadMoreButton.style.display = 'none';
+                    // 0件返ってきたら、もうないと判断
+                    self.hasMore(false);
                 }
 
             } catch (error) {
                 console.error('Error loading more records:', error);
                 alert('記録の読み込みに失敗しました。');
-                 loadMoreButton.disabled = false;
+                // エラーが起きても hasMore は true のままにしておく (リトライできるように)
             } finally {
-                if (loadingIndicator) loadingIndicator.style.display = 'none';
+                self.isLoading(false);
             }
-        });
+        };
     }
-});
+
+    // ViewModelを適用
+    ko.applyBindings(new PastRecordsViewModel());
 </script>
 
 </body>
