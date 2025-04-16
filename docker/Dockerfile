@@ -18,7 +18,9 @@ RUN apt-get update && \
     vim \
     libonig-dev \
     libzip-dev \
-    locales && \
+    locales \
+    nodejs \
+    npm && \
     ln -s /usr/include/x86_64-linux-gnu/gmp.h /usr/include/gmp.h && \
     docker-php-ext-configure gd --with-freetype-dir --with-jpeg-dir && \
     docker-php-ext-install mbstring pdo_mysql mysqli zip gd gmp bcmath
@@ -36,14 +38,18 @@ RUN usermod -u 1000 www-data && groupmod -g 1000 www-data
 RUN a2enmod rewrite headers
 
 # AllowOverrideをAllに設定
-RUN sed -i /<Directory \/var\/www\/html>/,/<\/Directory>/ s/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf
+RUN sed -i '\#<Directory /var/www/html>#,\#</Directory># s#AllowOverride None#AllowOverride All#g' /etc/apache2/apache2.conf
 
 # DocumentRootを変更し、環境変数を設定
 RUN DEFAULT_SITE_FILE=/etc/apache2/sites-enabled/000-default.conf && \
-    TMP=$(mktemp) && \
-    sed 's!/var/www/html!/var/www/html/my_fuel_project/public!' $DEFAULT_SITE_FILE > $TMP && \
-    echo SetEnv FUEL_ENV development >> $TMP && \
-    mv $TMP $DEFAULT_SITE_FILE
+    sed -i 's!DocumentRoot /var/www/html!DocumentRoot /var/www/html/my_fuel_project/public!' $DEFAULT_SITE_FILE && \
+    sed -i '/<\/VirtualHost>/i \    <Directory /var/www/html/my_fuel_project/public>' $DEFAULT_SITE_FILE && \
+    sed -i '/<\/VirtualHost>/i \        Options Indexes FollowSymLinks' $DEFAULT_SITE_FILE && \
+    sed -i '/<\/VirtualHost>/i \        AllowOverride All' $DEFAULT_SITE_FILE && \
+    sed -i '/<\/VirtualHost>/i \        Require all granted' $DEFAULT_SITE_FILE && \
+    sed -i '/<\/VirtualHost>/i \    </Directory>' $DEFAULT_SITE_FILE && \
+    echo "SetEnv FUEL_ENV development" >> $DEFAULT_SITE_FILE
+
 
 # FuelPHPのログディレクトリとキャッシュディレクトリを作成し、権限を設定
 RUN mkdir /var/log/fuel /var/cache/fuel && \

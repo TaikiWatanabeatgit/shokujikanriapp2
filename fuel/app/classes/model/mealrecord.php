@@ -81,8 +81,8 @@ class Model_Mealrecord // extends は不要
      */
     public static function create_record(array $data)
     {
-        // created_at, updated_at を手動で追加 (必要であれば)
-        $now = date('Y-m-d H:i:s');
+        // created_at, updated_at にUnixタイムスタンプを設定
+        $now = time(); // <-- time() を使用してUnixタイムスタンプを取得
         $data['created_at'] = $now;
         $data['updated_at'] = $now;
 
@@ -90,9 +90,10 @@ class Model_Mealrecord // extends は不要
             list($insert_id, $rows_affected) = DB::insert(static::$_table_name)
                 ->set($data)
                 ->execute();
+            // 挿入成功（影響行数>0）なら挿入ID、失敗ならfalseを返す
             return ($rows_affected > 0) ? $insert_id : false;
         } catch (\Database_Exception $e) {
-            // Log::error('Database error: ' . $e->getMessage());
+            Log::error('Database error in create_record: ' . $e->getMessage());
             return false;
         }
     }
@@ -251,6 +252,38 @@ class Model_Mealrecord // extends は不要
         } catch (\Database_Exception $e) {
             // Log::error('Database error: ' . $e->getMessage());
             return array();
+        }
+    }
+
+    /**
+     * 指定された期間の食事記録を検索する
+     *
+     * @param string $start_date 開始日 (Y-m-d)
+     * @param string $end_date   終了日 (Y-m-d)
+     * @return array             検索結果の配列、見つからない場合は空配列
+     * @throws \Database_Exception データベースエラーが発生した場合 (コントローラで捕捉するため)
+     */
+    public static function search_by_date_range($start_date, $end_date)
+    {
+        try {
+            // クエリビルダを使用して指定された日付範囲のデータを取得
+            $query = DB::select('*') // SELECT * FROM meal_records
+                        ->from(static::$_table_name)
+                        ->where('date', '>=', $start_date) // WHERE date >= start_date
+                        ->where('date', '<=', $end_date)   // AND date <= end_date
+                        ->order_by('date', 'asc')          // ORDER BY date ASC
+                        ->order_by('id', 'asc');            // , id ASC (日付が同じ場合の順序)
+
+            // クエリを実行し、結果を連想配列の配列として取得
+            $result = $query->as_assoc()->execute()->as_array();
+
+            return $result;
+
+        } catch (\Database_Exception $e) {
+            // エラーログを記録
+            Log::error('Database error in search_by_date_range: ' . $e->getMessage() . ' with dates: ' . $start_date . ' to ' . $end_date);
+            // エラーをコントローラーに通知するために再スロー
+            throw $e;
         }
     }
 

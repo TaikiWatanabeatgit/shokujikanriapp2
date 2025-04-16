@@ -31,7 +31,8 @@ return [
 	 *
 	 * If you are using a CDN, this should be the CDN url.
 	 */
-	'url' => '/assets/',
+	// 'url' => '/assets/', // ← コメントアウト
+	'url' => '/', // ← ルートURLを指定 (またはこの行自体不要かも)
 
 	/**
 	 * Whether to append the file's last modified time to the url.

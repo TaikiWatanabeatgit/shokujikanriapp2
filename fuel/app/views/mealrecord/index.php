@@ -42,9 +42,9 @@
     <?php endif; ?>
 
     <nav>
-        <?php echo Html::anchor('meal-records/create', '新規作成', array('class' => 'btn btn-primary')); ?>
-        <?php echo Html::anchor('meal-records/summary', 'サマリー表示'); ?>
-        <?php echo Html::anchor('meal-records/search', '検索'); ?>
+        <?php echo Html::anchor('mealrecord/create', '新規作成', array('class' => 'btn btn-primary')); ?>
+        <?php echo Html::anchor('mealrecord/summary', 'サマリー表示'); ?>
+        <?php echo Html::anchor('mealrecord/search', '検索'); ?>
     </nav>
 
     <?php if ($mealRecords): ?>

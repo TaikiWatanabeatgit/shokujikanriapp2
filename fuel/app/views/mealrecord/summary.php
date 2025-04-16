@@ -24,9 +24,9 @@
     <h1><?php echo Security::htmlentities($title); ?></h1>
 
     <nav>
-        <?php echo Html::anchor('meal-records', '一覧に戻る'); ?>
-        <?php echo Html::anchor('meal-records/create', '新規作成'); ?>
-        <?php echo Html::anchor('meal-records/search', '検索'); ?>
+        <?php echo Html::anchor('mealrecord', '一覧に戻る'); ?>
+        <?php echo Html::anchor('mealrecord/create', '新規作成'); ?>
+        <?php echo Html::anchor('mealrecord/search', '検索'); ?>
     </nav>
 
     <div class="summary-section summary-stats">

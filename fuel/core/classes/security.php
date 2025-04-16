@@ -228,7 +228,7 @@ class Security
 			return $value;
 
 		}
-		elseif (is_array($value) or ($value instanceof \Iterator and $value instanceof \ArrayAccess))
+		elseif (is_array($value) or ($value instanceof \Traversable and $value instanceof \ArrayAccess))
 		{
 			// Add to $already_cleaned variable when object
 			is_object($value) and $already_cleaned[] = $value;
@@ -238,7 +238,7 @@ class Security
 				$value[$k] = static::htmlentities($v, $flags, $encoding, $double_encode);
 			}
 		}
-		elseif ($value instanceof \Iterator or get_class($value) == 'stdClass')
+		elseif ($value instanceof \Iterator or (is_object($value) and get_class($value) == 'stdClass'))
 		{
 			// Add to $already_cleaned variable
 			$already_cleaned[] = $value;

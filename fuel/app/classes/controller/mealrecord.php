@@ -9,10 +9,10 @@ class Controller_Mealrecord extends Controller // 必要なら Controller_Templa
     {
         // ページネーション設定
         $config = array(
-            'pagination_url' => Uri::create('meal-records'),
+            'pagination_url' => Uri::create('mealrecord'),
             'total_items'    => Model_Mealrecord::count_all(),
             'per_page'       => 10, // 1ページあたりの表示件数
-            'uri_segment'    => 'page', // URLセグメント名 (例: /meal-records/page/2)
+            'uri_segment'    => 'page', // URLセグメント名 (例: /mealrecord/page/2)
             // 必要に応じて Bootstrap 用の設定を追加
             // 'num_links' => 5,
             // 'name' => 'bootstrap3',
@@ -72,13 +72,13 @@ class Controller_Mealrecord extends Controller // 必要なら Controller_Templa
     {
         // POSTリクエストでない場合は create へリダイレクト
         if (Input::method() !== 'POST') {
-            Response::redirect('meal-records/create');
+            Response::redirect('mealrecord/create');
         }
 
         // バリデーション設定
         $val = Validation::forge('mealrecord_create');
         $val->add_field('date', '日付', 'required|valid_date[Y-m-d]');
-        $val->add_field('meal_type', '種類', 'required|in_array[breakfast,lunch,dinner,snack]');
+        $val->add_field('meal_type', '種類', 'required')->add_rule('in_array', array('breakfast', 'lunch', 'dinner', 'snack'));
         $val->add_field('food_name', '料理名', 'required|max_length[255]');
         $val->add_field('calories', 'カロリー', 'valid_string[numeric]|numeric_min[0]'); // null許容
         $val->add_field('notes', 'メモ', 'max_length[1000]'); // 例: 最大1000文字
@@ -104,7 +104,7 @@ class Controller_Mealrecord extends Controller // 必要なら Controller_Templa
 
                 if (Model_Mealrecord::create_record($validated_data)) {
                     Session::set_flash('success', '食事記録が正常に保存されました。');
-                    Response::redirect('meal-records');
+                    Response::redirect('mealrecord');
                 } else {
                     Session::set_flash('error', '食事記録の保存に失敗しました。');
                 }
@@ -143,7 +143,7 @@ class Controller_Mealrecord extends Controller // 必要なら Controller_Templa
         // IDチェック
         if ($id === null || !ctype_digit((string)$id)) {
             Session::set_flash('error', '無効なIDです。');
-            Response::redirect('meal-records');
+            Response::redirect('mealrecord');
         }
 
         // レコード検索 (★変更: クエリビルダ版メソッド)
@@ -152,7 +152,7 @@ class Controller_Mealrecord extends Controller // 必要なら Controller_Templa
         // レコードが見つからない場合
         if (!$mealRecord) {
             Session::set_flash('error', '指定された食事記録が見つかりません。');
-            Response::redirect('meal-records');
+            Response::redirect('mealrecord');
         }
 
         // Viewに渡すデータ
@@ -177,25 +177,25 @@ class Controller_Mealrecord extends Controller // 必要なら Controller_Templa
         // IDチェック
         if ($id === null || !ctype_digit((string)$id)) {
             Session::set_flash('error', '無効なIDです。');
-            Response::redirect('meal-records');
+            Response::redirect('mealrecord');
         }
 
         // ★変更: クエリビルダ版メソッドで存在確認のみ行う
         $mealRecordExists = Model_Mealrecord::find_by_id($id);
         if (!$mealRecordExists) {
             Session::set_flash('error', '指定された食事記録が見つかりません。');
-            Response::redirect('meal-records');
+            Response::redirect('mealrecord');
         }
 
         // POSTリクエストでない場合は edit へリダイレクト
         if (Input::method() !== 'POST') {
-            Response::redirect('meal-records/edit/' . $id);
+            Response::redirect('mealrecord/edit/' . $id);
         }
 
         // バリデーション設定
         $val = Validation::forge('mealrecord_edit');
         $val->add_field('date', '日付', 'required|valid_date[Y-m-d]');
-        $val->add_field('meal_type', '種類', 'required|in_array[breakfast,lunch,dinner,snack]');
+        $val->add_field('meal_type', '種類', 'required')->add_rule('in_array', array('breakfast', 'lunch', 'dinner', 'snack'));
         $val->add_field('food_name', '料理名', 'required|max_length[255]');
         $val->add_field('calories', 'カロリー', 'valid_string[numeric]|numeric_min[0]');
         $val->add_field('notes', 'メモ', 'max_length[1000]');
@@ -224,14 +224,14 @@ class Controller_Mealrecord extends Controller // 必要なら Controller_Templa
                 // ★変更: クエリビルダ版のモデルメソッドで更新
                 if (Model_Mealrecord::update_record($id, $validated_data)) {
                     Session::set_flash('success', '食事記録が正常に更新されました。');
-                    Response::redirect('meal-records');
+                    Response::redirect('mealrecord');
                 } else {
                     // Model_Mealrecord::update_record は変更があった場合のみtrueを返す想定
                     // エラーでなければ「変更がなかった」か「失敗」
                     // ここではシンプルに「更新されなかった」とするか、詳細なエラーハンドリングを行う
                     Session::set_flash('notice', 'データに変更がないか、更新に失敗しました。');
                      // 更新されなくても一覧に戻す場合
-                     Response::redirect('meal-records');
+                    Response::redirect('mealrecord');
                 }
             } catch (\Database_Exception $e) {
                 Session::set_flash('error', 'データベースエラーが発生しました。');
@@ -261,14 +261,14 @@ class Controller_Mealrecord extends Controller // 必要なら Controller_Templa
         // IDチェック
         if ($id === null || !ctype_digit((string)$id)) {
             Session::set_flash('error', '無効なIDです。');
-            Response::redirect('meal-records');
+            Response::redirect('mealrecord');
         }
 
         // POSTリクエスト & CSRFチェック
         if (Input::method() === 'POST') {
             if (!Security::check_token()) {
                 Session::set_flash('error', '不正なリクエストです。もう一度お試しください。');
-                Response::redirect('meal-records');
+                Response::redirect('mealrecord');
             }
 
             // ★変更: 存在確認 (delete_record内でidチェックはされるが、事前に確認)
@@ -299,7 +299,7 @@ class Controller_Mealrecord extends Controller // 必要なら Controller_Templa
         }
 
         // 処理後、一覧へリダイレクト (変更なし)
-        Response::redirect('meal-records');
+        Response::redirect('mealrecord');
     }
 
     /**
@@ -348,40 +348,79 @@ class Controller_Mealrecord extends Controller // 必要なら Controller_Templa
         $data = array();
         $data['title'] = '食事記録検索';
         $data['search_name'] = '';
+        $data['start_date'] = ''; // Add for range search
+        $data['end_date'] = '';   // Add for range search
+        $data['search_type'] = null; // To identify which search was performed
         $data['records'] = null;
         $data['error_message'] = '';
 
-        // 料理名検索のPOSTリクエスト処理
-        if (Input::method() === 'POST' && Input::post('search_type') === 'name') {
+        if (Input::method() === 'POST') {
+            // Check CSRF token once for any POST request
             if (!Security::check_token()) {
                  $data['error_message'] = '不正なリクエストです。ページを再読み込みしてください。';
             } else {
-                $search_name = Input::post('search_name');
-                $data['search_name'] = $search_name;
+                $search_type = Input::post('search_type');
+                $data['search_type'] = $search_type;
 
-                if (empty($search_name)) {
-                    $data['error_message'] = '料理名を入力してください。';
-                } else {
-                    try {
-                        // ★変更: クエリビルダ版メソッドで検索
-                        $data['records'] = Model_Mealrecord::search_by_name($search_name);
+                if ($search_type === 'name') {
+                    // --- Name Search Logic --- 
+                    $search_name = Input::post('search_name');
+                    $data['search_name'] = $search_name;
 
-                        if (empty($data['records'])) {
-                             // ★変更: Html::chars を Security::htmlentities に
-                             $data['error_message'] = Security::htmlentities($search_name) . ' を含む記録は見つかりませんでした。';
+                    if (empty($search_name)) {
+                        $data['error_message'] = '料理名を入力してください。';
+                    } else {
+                        try {
+                            // Assuming Model_Mealrecord::search_by_name exists
+                            $data['records'] = Model_Mealrecord::search_by_name($search_name);
+                            // No need to set error message here if empty, view handles it
+                            // if (empty($data['records'])) {
+                            //     $data['error_message'] = Security::htmlentities($search_name) . ' を含む記録は見つかりませんでした。';
+                            // }
+                        } catch (\Database_Exception $e) {
+                            $data['error_message'] = '検索中にデータベースエラーが発生しました。';
+                            Log::error('Database error in search (name): ' . $e->getMessage());
+                        } catch (\Exception $e) {
+                            $data['error_message'] = '検索中に予期せぬエラーが発生しました。';
+                            Log::error('Unexpected error in search (name): ' . $e->getMessage());
                         }
-                    } catch (\Database_Exception $e) {
-                        $data['error_message'] = '検索中にエラーが発生しました。';
-                        Log::error('Database error in search (name): ' . $e->getMessage());
-                    } catch (\Exception $e) {
-                        $data['error_message'] = '検索中に予期せぬエラーが発生しました。';
-                        Log::error('Unexpected error in search (name): ' . $e->getMessage());
                     }
+                    // --- End Name Search Logic --- 
+
+                } elseif ($search_type === 'range') {
+                    // --- Date Range Search Logic --- 
+                    $start_date = Input::post('start_date');
+                    $end_date = Input::post('end_date');
+                    $data['start_date'] = $start_date;
+                    $data['end_date'] = $end_date;
+
+                    // Basic validation for dates
+                    if (empty($start_date) || empty($end_date)) {
+                        $data['error_message'] = '開始日と終了日の両方を入力してください。';
+                    } elseif (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $start_date) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $end_date)) {
+                         $data['error_message'] = '日付は YYYY-MM-DD 形式で入力してください。';
+                    } elseif (strtotime($start_date) > strtotime($end_date)) {
+                        $data['error_message'] = '開始日は終了日より前の日付を指定してください。';
+                    } else {
+                        try {
+                            // Assuming Model_Mealrecord::search_by_date_range exists
+                            $data['records'] = Model_Mealrecord::search_by_date_range($start_date, $end_date);
+                            // View handles the "no results" message
+                        } catch (\Database_Exception $e) {
+                            $data['error_message'] = '検索中にデータベースエラーが発生しました。';
+                            Log::error('Database error in search (range): ' . $e->getMessage());
+                        } catch (\Exception $e) {
+                            $data['error_message'] = '検索中に予期せぬエラーが発生しました。';
+                            Log::error('Unexpected error in search (range): ' . $e->getMessage());
+                        }
+                    }
+                    // --- End Date Range Search Logic --- 
                 }
+                // Only other POST type is AJAX date search, handled by post_search_date()
             }
         }
 
-        // Viewを生成して返す (変更なし)
+        // Always load the search view, passing data (including results or errors)
         return Response::forge(View::forge('mealrecord/search', $data));
     }
 
