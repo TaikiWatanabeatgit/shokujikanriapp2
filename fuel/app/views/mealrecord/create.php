@@ -47,7 +47,7 @@
 
     <div class="form-group">
         <?php echo Form::label('日付', 'date'); ?>
-        <?php echo Form::input('date', $val->validated('date') ?? Input::post('date', date('Y-m-d')), array('id' => 'form_date', 'required' => 'required')); ?>
+        <?php echo Form::input('date', $val->validated('date') ?? Input::post('date', date('Y-m-d')), array('id' => 'form_date', 'type' => 'date', 'required' => 'required')); ?>
         <?php if ($val->error('date')): ?>
             <p class="error-message"><?php echo $val->error('date')->get_message(); ?></p>
         <?php endif; ?>

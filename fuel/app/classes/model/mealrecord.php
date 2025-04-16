@@ -109,8 +109,8 @@ class Model_Mealrecord // extends は不要
         if (empty($id) || !ctype_digit((string)$id)) {
             return false;
         }
-        // updated_at を手動で追加 (必要であれば)
-        $data['updated_at'] = date('Y-m-d H:i:s');
+        // ★変更: updated_at を Unixタイムスタンプで設定
+        $data['updated_at'] = time(); // date('Y-m-d H:i:s'); から変更
 
         try {
             $rows_affected = DB::update(static::$_table_name)

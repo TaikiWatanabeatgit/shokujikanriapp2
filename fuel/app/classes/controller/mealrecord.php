@@ -258,48 +258,65 @@ class Controller_Mealrecord extends Controller // 必要なら Controller_Templa
      */
     public function action_destroy($id = null)
     {
+        Log::debug('------ [ACTION_DESTROY START] id: ' . $id); // ★目印を変更
+
         // IDチェック
         if ($id === null || !ctype_digit((string)$id)) {
+            Log::warning('[ACTION_DESTROY] Invalid ID provided: ' . $id); // ★目印を変更
             Session::set_flash('error', '無効なIDです。');
             Response::redirect('mealrecord');
         }
 
         // POSTリクエスト & CSRFチェック
         if (Input::method() === 'POST') {
+            Log::debug('[ACTION_DESTROY] POST request received.'); // ★目印を変更
             if (!Security::check_token()) {
+                Log::warning('[ACTION_DESTROY] CSRF token mismatch.'); // ★目印を変更
                 Session::set_flash('error', '不正なリクエストです。もう一度お試しください。');
                 Response::redirect('mealrecord');
             }
 
+            Log::debug('[ACTION_DESTROY] CSRF check passed. Finding record...'); // ★目印を変更
             // ★変更: 存在確認 (delete_record内でidチェックはされるが、事前に確認)
             $mealRecordExists = Model_Mealrecord::find_by_id($id);
 
             if ($mealRecordExists) {
+                Log::debug('[ACTION_DESTROY] Record found. Attempting delete...'); // ★目印を変更
                 try {
                     // ★変更: クエリビルダ版の削除メソッド呼び出し
                     if (Model_Mealrecord::delete_record($id)) {
+                        Log::info('[ACTION_DESTROY] Record deleted successfully. Setting success flash.'); // ★目印を変更
                         Session::set_flash('success', '食事記録が正常に削除されました。');
                     } else {
+                        Log::error('[ACTION_DESTROY] Model_Mealrecord::delete_record returned false.'); // ★目印を変更
                         // delete_record が false を返すのは、DBエラーか影響行数0の場合
                         Session::set_flash('error', '食事記録の削除に失敗しました。');
                     }
                 } catch (\Database_Exception $e) { // モデル側で catch してるが念のため
+                    Log::error('[ACTION_DESTROY] Database exception during delete: ' . $e->getMessage()); // ★目印を変更
                     Session::set_flash('error', 'データベースエラーが発生しました。');
-                    Log::error('Database error in destroy: ' . $e->getMessage());
+                    // Log::error('Database error in destroy: ' . $e->getMessage()); // ★コメントアウト (上でログ出力)
                 } catch (\Exception $e) { // 予期せぬエラー
+                    Log::error('[ACTION_DESTROY] Unexpected exception during delete: ' . $e->getMessage()); // ★目印を変更
                     Session::set_flash('error', '予期せぬエラーが発生しました。');
-                    Log::error('Unexpected error in destroy: ' . $e->getMessage());
+                    // Log::error('Unexpected error in destroy: ' . $e->getMessage()); // ★コメントアウト (上でログ出力)
                 }
             } else {
+                Log::warning('[ACTION_DESTROY] Record not found for deletion.'); // ★目印を変更
                 Session::set_flash('error', '指定された食事記録が見つかりません。');
             }
         } else {
+            Log::warning('[ACTION_DESTROY] Non-POST request received for destroy action.'); // ★目印を変更
             // POST以外でのアクセスは許可しない (変更なし)
             Session::set_flash('error', '不正なアクセス方法です。');
         }
 
+        Log::debug('[ACTION_DESTROY] Redirecting to mealrecord...'); // ★目印を変更
         // 処理後、一覧へリダイレクト (変更なし)
         Response::redirect('mealrecord');
+
+        // ★念のためリダイレクト後にdie()を追加して、この行が表示されないことを確認
+        // die('Should have redirected!');
     }
 
     /**
@@ -450,33 +467,40 @@ class Controller_Mealrecord extends Controller // 必要なら Controller_Templa
      */
     public function post_search_date()
     {
-        // AJAXリクエストかつPOSTかチェック (変更なし)
+        // AJAXリクエストかつPOSTかチェック
         if (!Input::is_ajax() || Input::method() !== 'POST') {
-            return $this->response(array('error' => 'Invalid request'), 400);
+            // Invalid request: Return 400 Bad Request
+            return Response::forge(json_encode(['error' => 'Invalid request']), 400, ['Content-Type' => 'application/json']);
         }
 
-        // CSRF チェック (省略)
+        // CSRF チェック (実装する場合はここに)
+        // if (!Security::check_token()) {
+        //     return Response::forge(json_encode(['error' => 'Invalid CSRF token']), 403, ['Content-Type' => 'application/json']);
+        // }
 
         $search_date = Input::post('search_date');
 
-        // 日付フォーマット検証 (変更なし)
-        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $search_date)) {
+        // 日付フォーマット検証
+        if ($search_date && preg_match('/^\d{4}-\d{2}-\d{2}$/', $search_date)) {
             try {
-                 // ★変更: クエリビルダ版メソッドで検索
+                // モデルを使って日付で検索
                 $records = Model_Mealrecord::find_by_date($search_date);
 
-                // ★変更: 既に配列なのでそのまま返す
-                return $this->response($records, 200);
+                // 成功: JSON形式で記録を返す (空配列の場合も含む)
+                return Response::forge(json_encode($records), 200, ['Content-Type' => 'application/json']);
 
             } catch (\Database_Exception $e) {
+                 // データベースエラー
                  Log::error('Database error in search (date): ' . $e->getMessage());
-                 return $this->response(array('error' => 'Search error occurred'), 500);
+                 return Response::forge(json_encode(['error' => 'データベース検索中にエラーが発生しました。']), 500, ['Content-Type' => 'application/json']);
             } catch (\Exception $e) {
+                 // その他の予期せぬエラー
                  Log::error('Unexpected error in search (date): ' . $e->getMessage());
-                 return $this->response(array('error' => 'Unexpected error occurred'), 500);
+                 return Response::forge(json_encode(['error' => '予期せぬエラーが発生しました。']), 500, ['Content-Type' => 'application/json']);
             }
         } else {
-            return $this->response(array('error' => 'Invalid date format'), 400);
+            // 不正な日付フォーマット: Return 400 Bad Request
+            return Response::forge(json_encode(['error' => '日付の形式が無効です (YYYY-MM-DD)。']), 400, ['Content-Type' => 'application/json']);
         }
     }
 
