@@ -1,3 +1,4 @@
+<?php // SYNC TEST COMMENT - check ?>
 <!DOCTYPE html>
 <html>
 <head>
@@ -68,9 +69,9 @@
                         <td><?php echo $record['calories'] !== null ? Security::htmlentities($record['calories']) . ' kcal' : '-'; ?></td>
                         <td><?php echo nl2br(Security::htmlentities($record['notes'] ?? '')); ?></td>
                         <td class="actions">
-                            <?php echo Html::anchor('meal-records/edit/'. $record['id'], '編集'); ?>
+                            <?php echo Html::anchor('mealrecord/edit/'. $record['id'], '編集'); ?>
                             <?php
-                                echo Form::open(array('action' => 'meal-records/delete/'.$record['id'], 'method' => 'post', 'style' => 'display:inline;', 'onsubmit' => "return confirm('本当に削除しますか？');"));
+                                echo Form::open(array('action' => 'mealrecord/delete/'.$record['id'], 'method' => 'post', 'style' => 'display:inline;', 'onsubmit' => "return confirm('本当に削除しますか？');"));
                                 echo Form::button('delete', '削除', array('type' => 'submit', 'class' => 'btn btn-danger btn-xs'));
                                 echo Form::close();
                             ?>
