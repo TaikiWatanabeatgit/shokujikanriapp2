@@ -308,36 +308,57 @@ class Controller_Mealrecord extends Controller // 必要なら Controller_Templa
     public function action_summary()
     {
         $today = date('Y-m-d');
-        $current_year = date('Y');
-        $current_month = date('m');
+        $currentYear = date('Y');
+        $currentMonth = date('m');
+        $initialLimit = 5; // 初期表示件数
 
-        // ★変更: クエリビルダ版メソッド呼び出し
+        // 今日の記録
         $todayRecords = Model_Mealrecord::find_by_date($today);
 
-        // ★変更: クエリビルダ版メソッド呼び出し
-        $pastRecords = Model_Mealrecord::find_before_date($today);
+        // 今月の合計カロリー
+        $monthlyTotalCalories = Model_Mealrecord::sum_calories_for_month($currentYear, $currentMonth);
 
-        // ★変更: クエリビルダ版メソッド呼び出し
-        $monthlyTotalCalories = Model_Mealrecord::sum_calories_for_month($current_year, $current_month);
+        // 過去の平均カロリー
+        $pastStats = Model_Mealrecord::get_past_calories_stats($today);
+        $pastAverageCalories = ($pastStats['count'] > 0) ? ($pastStats['total'] / $pastStats['count']) : 0;
 
-        // ★変更: クエリビルダ版メソッド呼び出し
-        $past_stats = Model_Mealrecord::get_past_calories_stats($today);
-        $past_total_calories = $past_stats['total'];
-        $past_count = $past_stats['count'];
+        // 過去の記録 (初期表示分)
+        $pastRecords = Model_Mealrecord::find_before_date($today, $initialLimit, 0);
 
-        $pastAverageCalories = ($past_count > 0) ? round($past_total_calories / $past_count) : 0;
-
-
-        // Viewに渡すデータ (変更なし、中身は配列になる)
+        // Viewに渡すデータ
         $data = array();
         $data['title'] = '食事記録サマリー';
         $data['todayRecords'] = $todayRecords;
-        $data['pastRecords'] = $pastRecords;
         $data['monthlyTotalCalories'] = $monthlyTotalCalories;
         $data['pastAverageCalories'] = $pastAverageCalories;
+        $data['pastRecords'] = $pastRecords;
+        $data['initialPastRecordCount'] = count($pastRecords); // 初期表示件数をビューに渡す
+        $data['recordsPerPage'] = $initialLimit; // 1ページあたりの件数も渡す
 
-        // Viewを生成して返す (変更なし)
+        // Viewを生成して返す
         return Response::forge(View::forge('mealrecord/summary', $data));
+    }
+
+    /**
+     * 追加の過去記録を読み込む (Ajax用)
+     */
+    public function get_load_more_past_records()
+    {
+        $offset = Input::get('offset', 0);
+        $limit = Input::get('limit', 5); // デフォルトの取得件数
+        $today = date('Y-m-d');
+
+        if (!ctype_digit((string)$offset) || !ctype_digit((string)$limit) || $offset < 0 || $limit <= 0) {
+             return Response::forge(json_encode(['error' => 'Invalid parameters']), 400, ['Content-Type' => 'application/json']);
+        }
+
+        try {
+            $moreRecords = Model_Mealrecord::find_before_date($today, (int)$limit, (int)$offset);
+            return Response::forge(json_encode($moreRecords), 200, ['Content-Type' => 'application/json']);
+        } catch (\Exception $e) {
+            Log::error('Error loading more past records: ' . $e->getMessage());
+            return Response::forge(json_encode(['error' => 'Server error']), 500, ['Content-Type' => 'application/json']);
+        }
     }
 
     /**

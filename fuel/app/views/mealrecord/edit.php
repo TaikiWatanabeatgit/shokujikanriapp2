@@ -41,7 +41,7 @@
         </div>
     <?php endif; ?>
 
-    <?php echo Form::open(array('action' => 'meal-records/update/' . $mealRecord['id'], 'method' => 'post')); ?>
+    <?php echo Form::open(array('action' => 'mealrecord/update/' . $mealRecord['id'], 'method' => 'post')); ?>
 
     <?php echo Form::csrf(); // CSRF対策トークン ?>
 
@@ -103,7 +103,7 @@
 
     <div class="form-group">
         <?php echo Form::submit('submit', '更新', array('class' => 'btn btn-primary')); ?>
-        <?php echo Html::anchor('meal-records', 'キャンセル', array('class' => 'btn btn-secondary')); ?>
+        <?php echo Html::anchor('mealrecord', 'キャンセル', array('class' => 'btn btn-secondary')); ?>
     </div>
 
     <?php echo Form::close(); ?>

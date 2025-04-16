@@ -44,7 +44,7 @@ class Model_Mealrecord // extends は不要
             return DB::select('*')
                 ->from(static::$_table_name)
                 ->order_by('date', 'desc')
-                ->order_by('id', 'desc') // 日付が同じ場合の順序を保証
+                ->order_by('id', 'desc') // 日付が同じ場合の順序
                 ->limit((int)$limit)
                 ->offset((int)$offset)
                 ->as_assoc()
@@ -168,18 +168,27 @@ class Model_Mealrecord // extends は不要
     }
 
     /**
-     * 指定日より前のレコード取得
+     * 指定日より前のレコード取得 (ページネーション対応)
      * @param string $date (Y-m-d)
+     * @param int $limit 取得件数
+     * @param int $offset 開始位置
      * @return array
      */
-    public static function find_before_date($date)
+    public static function find_before_date($date, $limit = null, $offset = 0)
     {
         try {
-             return DB::select('*')
+             $query = DB::select('*')
                 ->from(static::$_table_name)
                 ->where('date', '<', $date)
                 ->order_by('date', 'desc')
-                ->as_assoc()
+                ->order_by('id', 'desc'); // 日付が同じ場合の順序
+
+             if ($limit !== null) {
+                 $query->limit((int)$limit);
+             }
+             $query->offset((int)$offset);
+
+             return $query->as_assoc()
                 ->execute()
                 ->as_array();
         } catch (\Database_Exception $e) {

@@ -60,7 +60,7 @@
     <div class="summary-section">
         <h2>過去の記録 (今日以外)</h2>
         <?php if ($pastRecords && count($pastRecords) > 0): ?>
-            <ul class="record-list">
+            <ul class="record-list" id="past-records-list">
                 <?php foreach ($pastRecords as $record): ?>
                     <li>
                         <strong><?php echo Security::htmlentities($record['date']); ?></strong> - 
@@ -72,11 +72,94 @@
                     </li>
                 <?php endforeach; ?>
             </ul>
-            <?php // 過去の記録が多い場合、ページネーションや表示件数制限を検討 ?>
+            <?php if ($initialPastRecordCount >= $recordsPerPage): ?>
+                <button id="load-more-btn" data-offset="<?php echo $initialPastRecordCount; ?>" data-limit="<?php echo $recordsPerPage; ?>">もっと見る</button>
+                <p id="loading-indicator" style="display: none;">読み込み中...</p>
+            <?php endif; ?>
         <?php else: ?>
             <p>過去の記録はありません。</p>
         <?php endif; ?>
     </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const loadMoreButton = document.getElementById('load-more-btn');
+    const pastRecordsList = document.getElementById('past-records-list');
+    const loadingIndicator = document.getElementById('loading-indicator');
+
+    if (loadMoreButton) {
+        loadMoreButton.addEventListener('click', async () => {
+            const offset = parseInt(loadMoreButton.dataset.offset, 10);
+            const limit = parseInt(loadMoreButton.dataset.limit, 10);
+
+            loadMoreButton.disabled = true;
+            if (loadingIndicator) loadingIndicator.style.display = 'block';
+
+            try {
+                const response = await fetch(`<?php echo Uri::create('mealrecord/load_more_past_records'); ?>?offset=${offset}&limit=${limit}`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const newRecords = await response.json();
+
+                if (newRecords && newRecords.length > 0) {
+                    newRecords.forEach(record => {
+                        const li = document.createElement('li');
+
+                        const strong = document.createElement('strong');
+                        strong.textContent = record.date;
+
+                        const mealTypeSpan = document.createElement('span');
+                        mealTypeSpan.className = 'meal-type';
+                        mealTypeSpan.textContent = record.meal_type + ':';
+
+                        li.appendChild(strong);
+                        li.appendChild(document.createTextNode(' - '));
+                        li.appendChild(mealTypeSpan);
+                        li.appendChild(document.createTextNode(' '));
+                        li.appendChild(document.createTextNode(record.food_name));
+
+                        if (record.calories !== null) {
+                            const caloriesSpan = document.createElement('span');
+                            caloriesSpan.className = 'calories';
+                            caloriesSpan.textContent = `(${record.calories} kcal)`;
+                            li.appendChild(document.createTextNode(' '));
+                            li.appendChild(caloriesSpan);
+                        }
+
+                        pastRecordsList.appendChild(li);
+                    });
+
+                    loadMoreButton.dataset.offset = offset + newRecords.length;
+
+                    if (newRecords.length < limit) {
+                        loadMoreButton.style.display = 'none';
+                    } else {
+                         loadMoreButton.disabled = false;
+                    }
+
+                } else {
+                    loadMoreButton.style.display = 'none';
+                }
+
+            } catch (error) {
+                console.error('Error loading more records:', error);
+                alert('記録の読み込みに失敗しました。');
+                 loadMoreButton.disabled = false;
+            } finally {
+                if (loadingIndicator) loadingIndicator.style.display = 'none';
+            }
+        });
+    }
+});
+</script>
 
 </body>
 </html> 
