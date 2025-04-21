@@ -9,6 +9,7 @@ class Controller_Mealrecord extends Controller // 必要なら Controller_Templa
     {
         parent::before(); // 親クラスのbeforeメソッドを呼び出す (必要に応じて)
 
+        // --- Greeting Logic ---
         $hour = (int)date('G'); // 現在の時を取得 (0-23)
         $greeting = '';
 
@@ -19,9 +20,15 @@ class Controller_Mealrecord extends Controller // 必要なら Controller_Templa
         } else { // 18:00 - 4:59
             $greeting = 'こんばんは🌙';
         }
-
-        // ビュー全体で $greeting 変数を使えるように設定
         View::set_global('greeting', $greeting);
+
+        // --- Announcement Logic (Merged from the duplicate before method) ---
+        $announcement = '記録を始めましょう！'; // Default message
+        if (Model_Mealrecord::count_all() > 0) { // Check if any records exist
+            $announcement = 'もっと記録しましょう💪';
+        }
+        // Make the announcement available in views
+        View::set_global('announcement', $announcement);
     }
     public function action_index()
     {
@@ -351,6 +358,32 @@ class Controller_Mealrecord extends Controller // 必要なら Controller_Templa
         $currentMonth = date('m');
         $initialLimit = 5; // 初期表示件数
 
+        // --- ここから追加 ---
+        $summary_announcement = 'まだ記録がありません。最初の記録を追加しましょう！'; // デフォルト
+        try {
+            $latest_record_date_str = Model_Mealrecord::get_latest_record_date(); // 最新の記録日を取得 (モデルに実装が必要)
+
+            if ($latest_record_date_str) {
+                $latest_timestamp = strtotime($latest_record_date_str);
+                $today_timestamp = strtotime($today);
+                $days_diff = floor(($today_timestamp - $latest_timestamp) / (60 * 60 * 24)); // 日数差 (小数点以下切り捨て)
+
+                if ($days_diff == 0) {
+                    $summary_announcement = '今日も記録しましたね！素晴らしい！👍';
+                } elseif ($days_diff == 1) {
+                    $summary_announcement = '昨日の記録がありますね。続けていきましょう！';
+                } elseif ($days_diff <= 7) {
+                    $summary_announcement = '最近 (' . date('n月j日', $latest_timestamp) . ') 記録がありますね。';
+                } else {
+                    $summary_announcement = 'しばらく記録がありません。(最後の記録: ' . date('n月j日', $latest_timestamp) . ') また記録しましょう！';
+                }
+            }
+        } catch (\Exception $e) {
+             Log::error('Error getting latest record date for summary announcement: ' . $e->getMessage());
+             $summary_announcement = 'お知らせの取得中にエラーが発生しました。'; // エラー時のメッセージ
+        }
+        // --- ここまで追加 ---
+
         // 今日の記録
         $todayRecords = Model_Mealrecord::find_by_date($today);
 
@@ -373,6 +406,7 @@ class Controller_Mealrecord extends Controller // 必要なら Controller_Templa
         $data['pastRecords'] = $pastRecords;
         $data['initialPastRecordCount'] = count($pastRecords); // 初期表示件数をビューに渡す
         $data['recordsPerPage'] = $initialLimit; // 1ページあたりの件数も渡す
+        $data['summary_announcement'] = $summary_announcement; // ★追加したメッセージをビューに渡す
 
         // Viewを生成して返す
         return Response::forge(View::forge('mealrecord/summary', $data));

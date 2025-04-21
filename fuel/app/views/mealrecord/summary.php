@@ -29,12 +29,19 @@
         <?php echo Html::anchor('mealrecord/search', '検索'); ?>
     </nav>
 
+    <?php if (isset($summary_announcement)): ?>
+        <p>
+            <?php echo $summary_announcement; ?>
+        </p>
+        
+    <?php endif; ?>
+    
     <div class="summary-section summary-stats">
         <h2>統計情報</h2>
         <p><strong>今月の合計カロリー:</strong> <?php echo Security::htmlentities(number_format($monthlyTotalCalories)); ?> kcal</p>
         <p><strong>過去の平均カロリー:</strong> <?php echo Security::htmlentities(number_format($pastAverageCalories)); ?> kcal/日</p>
     </div>
-
+    
     <div class="summary-section">
         <h2>今日の記録 (<?php echo date('Y年m月d日'); ?>)</h2>
         <?php if ($todayRecords && count($todayRecords) > 0): ?>

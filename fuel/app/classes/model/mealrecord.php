@@ -56,6 +56,25 @@ class Model_Mealrecord // extends は不要
         }
     }
 
+    /** 
+     * 最新の記録日を取得
+     * @return string|null 記録日 (Y-m-d) or null
+     */
+    public static function get_latest_record_date()
+    {
+        $result = DB::select(array(DB::expr('MAX(date)'), 'latest_date'))
+                        ->from(static::$_table_name)
+                        ->order_by('date', 'desc')  // 日付で降順ソート
+                        ->order_by('created_at', 'desc')   // 同じ日付なら作成日で降順ソート
+                        ->limit(1)
+                        ->execute();
+        if ($result->count() > 0) {
+            return $result->get('date'); // 'date' カラムの値を取得
+        } else {
+            return null;
+        }
+    }
+
     /**
      * レコード総数取得
      * @return int
