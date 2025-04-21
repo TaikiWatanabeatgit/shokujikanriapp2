@@ -48,6 +48,11 @@
         <?php echo Html::anchor('mealrecord/summary', 'サマリー表示'); ?>
         <?php echo Html::anchor('mealrecord/search', '検索'); ?>
     </nav>
+    <?php if (isset($greeting)): ?>
+        <p><?php echo $greeting; ?></p>
+    <?php endif; ?>
+        <hr color="gray" style="opacity: 0.2">
+        <br>
 
     <?php if ($mealRecords): ?>
         <table>

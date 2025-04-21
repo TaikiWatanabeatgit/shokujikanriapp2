@@ -5,6 +5,24 @@ class Controller_Mealrecord extends Controller // 必要なら Controller_Templa
     /**
      * 一覧表示
      */
+    public function before()
+    {
+        parent::before(); // 親クラスのbeforeメソッドを呼び出す (必要に応じて)
+
+        $hour = (int)date('G'); // 現在の時を取得 (0-23)
+        $greeting = '';
+
+        if ($hour >= 5 && $hour < 12) { // 5:00 - 11:59
+            $greeting = 'おはようございます☀️';
+        } elseif ($hour >= 12 && $hour < 18) { // 12:00 - 17:59
+            $greeting = 'こんにちは☀️';
+        } else { // 18:00 - 4:59
+            $greeting = 'こんばんは🌙';
+        }
+
+        // ビュー全体で $greeting 変数を使えるように設定
+        View::set_global('greeting', $greeting);
+    }
     public function action_index()
     {
         // 現在のページ番号を取得 (uri_segment 'page' の次、通常は3番目)
