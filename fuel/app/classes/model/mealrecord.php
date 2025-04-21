@@ -62,15 +62,18 @@ class Model_Mealrecord // extends は不要
      */
     public static function get_latest_record_date()
     {
-        $result = DB::select(array(DB::expr('MAX(date)'), 'latest_date'))
-                        ->from(static::$_table_name)
-                        ->order_by('date', 'desc')  // 日付で降順ソート
-                        ->order_by('created_at', 'desc')   // 同じ日付なら作成日で降順ソート
-                        ->limit(1)
-                        ->execute();
-        if ($result->count() > 0) {
-            return $result->get('date'); // 'date' カラムの値を取得
-        } else {
+        try {
+            $result = DB::select(array(DB::expr('MAX(date)'), 'latest_date'))
+                            ->from(static::$_table_name)
+                            ->execute();
+
+            if ($result->count() > 0 && $result->get('latest_date') !== null) {
+                return $result->get('latest_date');
+            } else {
+                return null;
+            }
+        } catch (\Database_Exception $e) {
+            Log::error('Database error in get_latest_record_date: ' . $e->getMessage());
             return null;
         }
     }
